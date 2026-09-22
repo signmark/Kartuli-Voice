@@ -1,11 +1,7 @@
 """Kartuli-Voice MVP — TTS движок (Edge TTS)."""
-import os
 import logging
 import tempfile
-import asyncio
 import edge_tts
-
-from kartuli.config import TTS_PROVIDER
 
 logger = logging.getLogger(__name__)
 

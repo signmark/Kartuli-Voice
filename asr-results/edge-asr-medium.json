@@ -1,0 +1,52 @@
+{
+  "1": {
+    "original": "აქ შეანელეთ, თუ შეიძლება",
+    "asr": "ផ១ ផ៭ ដ២ ធ០េ០្� Во ជ៩",
+    "matched_chars": 3,
+    "a_len": 24,
+    "b_len": 21,
+    "a_only": "აქშეანელეთ,თუშეიძლება",
+    "b_only": "ផ១ផ៭ដ២ធ០េ០្� Во ជ៩",
+    "recall_pct": 12.5
+  },
+  "2": {
+    "original": "სად არის მაღაზია?",
+    "asr": "ჩრგნი ღიი სრრი სროორსსსსრსმე",
+    "matched_chars": 5,
+    "a_len": 17,
+    "b_len": 28,
+    "a_only": "ად ა აღაზია?",
+    "b_only": "ჩრგნი ღიი რ როორსსსსრსე",
+    "recall_pct": 29.4
+  },
+  "3": {
+    "original": "რამდენი ღირს ბილეთი?",
+    "asr": "ΡΑΜΔΑΣΙ ΦΙΡΣΒΙΛΕΤΙ",
+    "matched_chars": 1,
+    "a_len": 20,
+    "b_len": 18,
+    "a_only": "რამდენიღირს ბილეთი?",
+    "b_only": "ΡΑΜΔΑΣΙΦΙΡΣΒΙΛΕΤΙ",
+    "recall_pct": 5.0
+  },
+  "4": {
+    "original": "დიდი მადლობა",
+    "asr": "intentionally  lång김",
+    "matched_chars": 1,
+    "a_len": 12,
+    "b_len": 20,
+    "a_only": "დიდიმადლობა",
+    "b_only": "intentionally lång김",
+    "recall_pct": 8.3
+  },
+  "5": {
+    "original": "რა გქვიათ?",
+    "asr": "ΡΑΚΧΕΙΑΤ",
+    "matched_chars": 0,
+    "a_len": 10,
+    "b_len": 8,
+    "a_only": "რა გქვიათ?",
+    "b_only": "ΡΑΚΧΕΙΑΤ",
+    "recall_pct": 0.0
+  }
+}

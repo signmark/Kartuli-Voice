@@ -1,0 +1,52 @@
+{
+  "1": {
+    "original": "აქ შეანელეთ, თუ შეიძლება",
+    "asr": "Akši Anelet tuşey zleba",
+    "matched_chars": 3,
+    "a_len": 24,
+    "b_len": 23,
+    "a_only": "აქშეანელეთ,თუშეიძლება",
+    "b_only": "AkšiAnelettuşeyzleba",
+    "recall_pct": 12.5
+  },
+  "2": {
+    "original": "სად არის მაღაზია?",
+    "asr": "Sadaris Marazia",
+    "matched_chars": 1,
+    "a_len": 17,
+    "b_len": 15,
+    "a_only": "სადარის მაღაზია?",
+    "b_only": "SadarisMarazia",
+    "recall_pct": 5.9
+  },
+  "3": {
+    "original": "რამდენი ღირს ბილეთი?",
+    "asr": "Germany's wild",
+    "matched_chars": 1,
+    "a_len": 20,
+    "b_len": 14,
+    "a_only": "რამდენიღირს ბილეთი?",
+    "b_only": "Germany'swild",
+    "recall_pct": 5.0
+  },
+  "4": {
+    "original": "დიდი მადლობა",
+    "asr": "ady Madhlova",
+    "matched_chars": 1,
+    "a_len": 12,
+    "b_len": 12,
+    "a_only": "დიდიმადლობა",
+    "b_only": "adyMadhlova",
+    "recall_pct": 8.3
+  },
+  "5": {
+    "original": "რა გქვიათ?",
+    "asr": "rackボ llet",
+    "matched_chars": 1,
+    "a_len": 10,
+    "b_len": 10,
+    "a_only": "რაგქვიათ?",
+    "b_only": "rackボllet",
+    "recall_pct": 10.0
+  }
+}
