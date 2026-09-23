@@ -1,8 +1,13 @@
 """Kartuli-Voice MVP — перевод и транслитерация."""
 import logging
-import re
 
 logger = logging.getLogger(__name__)
+
+SOURCE_EDGE_PUNCTUATION = " \t\r\n.,!?;:…—–-«»\"'()[]{}"
+
+
+class TranslationError(RuntimeError):
+    """The source phrase could not be translated completely and safely."""
 
 # Базовый словарь для MVP (без API)
 DICTIONARY = {
@@ -77,6 +82,20 @@ TRANSLIT_EN = {
 VOWELS_GE = set("აეიოუ")
 
 
+def is_complete_georgian_translation(text: str) -> bool:
+    """Return True only for non-empty text whose letters are all Georgian."""
+    if not text or not text.strip():
+        return False
+
+    has_georgian_letter = False
+    for char in text:
+        if char in TRANSLIT_RU:
+            has_georgian_letter = True
+        elif char.isalpha():
+            return False
+    return has_georgian_letter
+
+
 def _transliterate(text: str, table: dict) -> str:
     """Транслитерация по таблице."""
     result = []
@@ -105,38 +124,29 @@ def _split_syllables(text: str) -> list[str]:
 async def translate_to_georgian(text: str) -> str:
     """Перевод текста на грузинский."""
     text_stripped = text.strip()
-    text_lower = text_stripped.lower()
+    dictionary_key = text_stripped.strip(SOURCE_EDGE_PUNCTUATION).lower()
     
     # 1. Точное совпадение фразы в словаре
-    if text_lower in DICTIONARY:
-        return DICTIONARY[text_lower]
+    if dictionary_key in DICTIONARY:
+        candidate = DICTIONARY[dictionary_key]
+        if not is_complete_georgian_translation(candidate):
+            raise TranslationError("Не удалось перевести фразу целиком")
+        return candidate
     
     # 2. Попытка перевода через deep_translator (Google)
     try:
         from deep_translator import GoogleTranslator
         result = GoogleTranslator(source='ru', target='ka').translate(text_stripped)
-        if result and result.strip():
-            return result.strip()
+        candidate = result.strip() if result else ""
     except Exception as e:
-        logger.warning(f"Google translate failed: {e}")
-    
-    # 3. Fallback: перевод по словам
-    words = re.split(r'(\s+)', text_lower)
-    translated_parts = []
-    any_translated = False
-    
-    for part in words:
-        clean = part.strip('.,!?;:')
-        if clean in DICTIONARY:
-            translated_parts.append(DICTIONARY[clean])
-            any_translated = True
-        else:
-            translated_parts.append(part)
-    
-    if any_translated:
-        return "".join(translated_parts)
-    
-    return text_stripped
+        logger.warning("Google translate failed: errorClass=%s", type(e).__name__)
+        raise TranslationError("Не удалось перевести фразу целиком") from e
+
+    if not is_complete_georgian_translation(candidate):
+        logger.warning("Google translate returned an incomplete or mixed-script result")
+        raise TranslationError("Не удалось перевести фразу целиком")
+
+    return candidate
 
 
 def transliterate_georgian(text: str) -> str:

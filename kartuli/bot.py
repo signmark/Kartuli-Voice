@@ -5,7 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
 from kartuli.config import TELEGRAM_BOT_TOKEN
-from kartuli.translator import translate_to_georgian, transliterate_georgian, transliterate_syllables, transliterate_english_syllables
+from kartuli.translator import TranslationError, translate_to_georgian, transliterate_georgian, transliterate_syllables, transliterate_english_syllables
 from kartuli.tts import generate_audio
 
 
@@ -31,7 +31,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "🇬🇪 გამარჯობა! Я помогу тебе с грузинским языком.\n\n"
         "Просто напиши фразу на русском — я переведу, дам транскрипцию и озвучу.\n\n"
-        "Пример: Спасибо, Помогите, Где ресторан?"
+        "Примеры: Спасибо! Помогите! Где?"
     )
 
 
@@ -74,6 +74,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         # Сохраняем текст для озвучки
         context.user_data["last_text"] = georgian_text
+    except TranslationError:
+        await update.message.reply_text(
+            "Не удалось перевести фразу целиком. Попробуйте ещё раз позже."
+        )
     except Exception as e:
         logger.error(f"Message handler error: {e}", exc_info=True)
         await update.message.reply_text("Произошла ошибка. Попробуйте ещё раз.")
