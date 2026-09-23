@@ -121,6 +121,27 @@ def _split_syllables(text: str) -> list[str]:
     return syllables
 
 
+def _split_russian_hint_word(word: str) -> list[str]:
+    """Split one Georgian word and keep its final consonants in the last syllable."""
+    syllables = []
+    current = []
+
+    for char in word:
+        current.append(char)
+        if char in VOWELS_GE:
+            syllables.append("".join(current))
+            current = []
+
+    if current:
+        tail = "".join(current)
+        if syllables:
+            syllables[-1] += tail
+        else:
+            syllables.append(tail)
+
+    return syllables
+
+
 async def translate_to_georgian(text: str) -> str:
     """Перевод текста на грузинский."""
     text_stripped = text.strip()
@@ -155,12 +176,13 @@ def transliterate_georgian(text: str) -> str:
 
 
 def transliterate_syllables(text: str) -> str:
-    """Русская транслитерация по слогам: [да-ме-хма-рет]."""
-    syllables = _split_syllables(text)
-    result = []
-    for s in syllables:
-        result.append(_transliterate(s, TRANSLIT_RU))
-    return "[" + "-".join(result) + "]"
+    """Russian syllable hint with independent bracketed words."""
+    words = []
+    for word in text.split():
+        syllables = _split_russian_hint_word(word)
+        transliterated = [_transliterate(syllable, TRANSLIT_RU) for syllable in syllables]
+        words.append("[" + "-".join(transliterated) + "]")
+    return " ".join(words)
 
 
 def transliterate_english(text: str) -> str:

@@ -6,6 +6,7 @@ import unittest
 from kartuli.translator import (
     DICTIONARY,
     TRANSLIT_RU,
+    transliterate_english_syllables,
     transliterate_georgian,
     transliterate_syllables,
 )
@@ -24,6 +25,20 @@ class RussianTransliterationTest(unittest.TestCase):
         self.assertEqual(transliterate_georgian("გამარჯობა"), "гамарджоба")
         self.assertEqual(transliterate_georgian("გამარჯობა როგორ"), "гамарджоба рогор")
         self.assertEqual(transliterate_syllables("მადლობა"), "[ма-дло-ба]")
+
+    def test_russian_syllables_keep_word_boundaries_and_final_consonants(self) -> None:
+        self.assertEqual(
+            transliterate_syllables("გამარჯობა როგორ"),
+            "[га-ма-рджо-ба] [ро-гор]",
+        )
+        self.assertEqual(transliterate_syllables("დამეხმარეთ"), "[да-ме-хма-рет]")
+        self.assertEqual(transliterate_syllables("გთხოვთ"), "[гтховт]")
+
+    def test_english_syllable_hint_is_unchanged(self) -> None:
+        self.assertEqual(
+            transliterate_english_syllables("გამარჯობა როგორ"),
+            "[ga-ma-rjo-ba- ro-go-r]",
+        )
 
     def test_dictionary_outputs_never_leave_georgian_in_russian_transcription(self) -> None:
         for source, translated in DICTIONARY.items():
