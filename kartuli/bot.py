@@ -8,7 +8,21 @@ from kartuli.config import TELEGRAM_BOT_TOKEN
 from kartuli.translator import translate_to_georgian, transliterate_georgian, transliterate_syllables, transliterate_english_syllables
 from kartuli.tts import generate_audio
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
+
+THIRD_PARTY_LOGGERS = ("httpx", "httpcore", "telegram.request")
+
+
+def configure_logging() -> None:
+    """Keep application logs while suppressing request URLs from dependencies."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
+    )
+    for logger_name in THIRD_PARTY_LOGGERS:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+
+configure_logging()
 logger = logging.getLogger(__name__)
 
 
