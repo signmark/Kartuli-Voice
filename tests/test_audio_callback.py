@@ -114,6 +114,7 @@ class MessageBoundAudioTest(unittest.IsolatedAsyncioTestCase):
             for handlers in app.handlers.values()
             for handler in handlers
             if isinstance(handler, CallbackQueryHandler)
+            and handler.check_update(self._callback_update(callback_data))
         ]
 
         self.assertEqual(len(callback_handlers), 1)

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from telegram import Chat, Message, MessageEntity, Update, User
 
-from kartuli.bot import build_application, main, speak_callback, start, unknown_command
+from kartuli.bot import build_application, favorites_command, main, speak_callback, start, unknown_command
 from kartuli import config
 
 
@@ -58,7 +58,7 @@ class BotBootstrapTest(unittest.IsolatedAsyncioTestCase):
         app = build_application("123456:TEST_TOKEN")
         app.bot._bot_user = User(id=2, first_name="Test Bot", is_bot=True, username="test_bot")
         handlers = app.handlers[0]
-        for command, expected in (("/start", start), ("/whatnow", unknown_command)):
+        for command, expected in (("/start", start), ("/favorites", favorites_command), ("/whatnow", unknown_command)):
             with self.subTest(command=command):
                 update = self.command_update(command, app.bot)
                 first_match = next(handler for handler in handlers if handler.check_update(update))

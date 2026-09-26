@@ -3,6 +3,7 @@
 logs/
 venv/
 .venv/
+data/
 __pycache__/
 *.pyc
 /tmp/
