@@ -6,6 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
 from kartuli.config import TELEGRAM_BOT_TOKEN
+from kartuli.log_redaction import TelegramTokenFilter
 from kartuli.translator import TranslationError, translate_to_georgian, transliterate_georgian, transliterate_syllables, transliterate_english_syllables
 from kartuli.tts import generate_audio
 
@@ -15,11 +16,18 @@ MAX_AUDIO_TEXTS_PER_USER = 20
 
 
 def configure_logging() -> None:
-    """Keep application logs while suppressing request URLs from dependencies."""
+    """Keep useful logs, suppress request URLs, and redact Telegram tokens."""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
+    # Root logger filters do not see propagated dependency records. Protect
+    # every output handler instead, and replace our filter on reconfiguration.
+    for handler in logging.getLogger().handlers:
+        for installed_filter in tuple(handler.filters):
+            if isinstance(installed_filter, TelegramTokenFilter):
+                handler.removeFilter(installed_filter)
+        handler.addFilter(TelegramTokenFilter(TELEGRAM_BOT_TOKEN))
     for logger_name in THIRD_PARTY_LOGGERS:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
 
