@@ -7,7 +7,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 
 from kartuli.config import TELEGRAM_BOT_TOKEN
 from kartuli.log_redaction import TelegramTokenFilter
-from kartuli.translator import TranslationError, translate_to_georgian, transliterate_georgian, transliterate_syllables, transliterate_english_syllables
+from kartuli.translator import TranslationError, TranslationUnavailableError, translate_to_georgian, transliterate_georgian, transliterate_syllables, transliterate_english_syllables
 from kartuli.tts import generate_audio
 
 
@@ -113,6 +113,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             f"📝 {translit_ru_syll}\n"
             f"🔤 {translit_en_syll}",
             reply_markup=reply_markup,
+        )
+    except TranslationUnavailableError:
+        await update.message.reply_text(
+            "Сервис перевода сейчас недоступен. Попробуйте ещё раз позже."
         )
     except TranslationError:
         await update.message.reply_text(

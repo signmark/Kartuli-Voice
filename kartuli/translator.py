@@ -1,13 +1,24 @@
 """Kartuli-Voice MVP — перевод и транслитерация."""
+import asyncio
 import logging
+import os
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
 SOURCE_EDGE_PUNCTUATION = " \t\r\n.,!?;:…—–-«»\"'()[]{}"
+GEMINI_MODEL = "gemini-3.8-flash"
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+GEMINI_TIMEOUT_SECONDS = 15
 
 
 class TranslationError(RuntimeError):
     """The source phrase could not be translated completely and safely."""
+
+
+class TranslationUnavailableError(TranslationError):
+    """The translation provider is unavailable."""
 
 # Базовый словарь для MVP (без API)
 DICTIONARY = {
@@ -145,6 +156,8 @@ def _split_russian_hint_word(word: str) -> list[str]:
 async def translate_to_georgian(text: str) -> str:
     """Перевод текста на грузинский."""
     text_stripped = text.strip()
+    if not text_stripped:
+        raise TranslationError("Не удалось перевести фразу целиком")
     dictionary_key = text_stripped.strip(SOURCE_EDGE_PUNCTUATION).lower()
     
     # 1. Точное совпадение фразы в словаре
@@ -154,17 +167,42 @@ async def translate_to_georgian(text: str) -> str:
             raise TranslationError("Не удалось перевести фразу целиком")
         return candidate
     
-    # 2. Попытка перевода через deep_translator (Google)
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise TranslationUnavailableError("Сервис перевода сейчас недоступен")
+
     try:
-        from deep_translator import GoogleTranslator
-        result = GoogleTranslator(source='ru', target='ka').translate(text_stripped)
-        candidate = result.strip() if result else ""
-    except Exception as e:
-        logger.warning("Google translate failed: errorClass=%s", type(e).__name__)
-        raise TranslationError("Не удалось перевести фразу целиком") from e
+        async with asyncio.timeout(GEMINI_TIMEOUT_SECONDS):
+            async with httpx.AsyncClient(timeout=GEMINI_TIMEOUT_SECONDS) as client:
+                response = await client.post(
+                    GEMINI_URL,
+                    headers={"x-goog-api-key": api_key},
+                    json={
+                        "systemInstruction": {
+                            "parts": [{"text": "Translate the entire Russian phrase into natural Georgian. Return only the complete Georgian translation, with no explanations or markdown."}]
+                        },
+                        "contents": [{"role": "user", "parts": [{"text": text_stripped}]}],
+                        "generationConfig": {"temperature": 0},
+                    },
+                )
+                response.raise_for_status()
+                response_data = response.json()
+    except Exception as error:
+        logger.warning("Gemini translation failed: errorClass=%s", type(error).__name__)
+        raise TranslationUnavailableError("Сервис перевода сейчас недоступен") from None
+
+    try:
+        candidate_response = response_data["candidates"][0]
+        if candidate_response["finishReason"] != "STOP":
+            raise ValueError("Gemini response did not finish")
+        parts = candidate_response["content"]["parts"]
+        candidate = "".join(part["text"] for part in parts if not part.get("thought")).strip()
+    except (KeyError, IndexError, TypeError, AttributeError, ValueError):
+        logger.warning("Gemini returned an incomplete response")
+        raise TranslationError("Не удалось перевести фразу целиком") from None
 
     if not is_complete_georgian_translation(candidate):
-        logger.warning("Google translate returned an incomplete or mixed-script result")
+        logger.warning("Gemini returned an incomplete or mixed-script result")
         raise TranslationError("Не удалось перевести фразу целиком")
 
     return candidate

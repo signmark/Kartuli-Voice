@@ -4,11 +4,9 @@ AI-ассистент с озвучкой грузинского языка.
 
 ## Стек
 
-- **Backend**: Python 3.11+ / FastAPI
-- **Bot**: python-telegram-bot
-- **TTS**: ElevenLabs API (премиум) / Google TTS (бесплатный)
-- **Перевод**: OpenAI GPT-4o-mini
-- **Хранение**: SQLite (MVP)
+- **Бот**: Python 3.11+ / python-telegram-bot
+- **Озвучка**: Edge TTS
+- **Перевод**: встроенный словарь, затем Gemini 3.8 Flash для остальных фраз
 
 ## Быстрый старт
 
@@ -18,23 +16,26 @@ pip install -r requirements.txt
 
 # Настройка окружения
 cp .env.example .env
-# Заполнить переменные в .env
+# Указать TELEGRAM_BOT_TOKEN и GEMINI_API_KEY в .env
 
 # Запуск
 python -m kartuli.bot
 ```
+
+Фразы из словаря переводятся без сети и без ключа Gemini. Для остальных фраз
+бот обращается к Gemini с таймаутом 15 секунд. Если ключ отсутствует или сервис
+недоступен, бот показывает ошибку и не строит транскрипцию и кнопку озвучки.
+Ответ Gemini принимается только тогда, когда все его буквы грузинские.
+Ключи не следует записывать в репозиторий или журналы.
 
 ## Структура проекта
 
 ```
 kartuli-voice-mvp/
 ├── kartuli/
-│   ├── __init__.py
 │   ├── bot.py          # Telegram bot
-│   ├── api.py          # FastAPI endpoints
-│   ├── translator.py   # LLM перевод и транслитерация
-│   ├── tts.py          # TTS движок
-│   ├── storage.py      # Хранение избранных
+│   ├── translator.py   # Словарь, Gemini и транслитерация
+│   ├── tts.py          # Озвучка
 │   └── config.py       # Конфигурация
 ├── tests/
 ├── requirements.txt
