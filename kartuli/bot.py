@@ -58,6 +58,7 @@ def build_application(token: str) -> Application:
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.COMMAND, unknown_command))
     app.add_handler(
         CallbackQueryHandler(
             speak_callback,
@@ -86,6 +87,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "3. Получи транслитерацию (как произносить)\n"
         "4. Нажми ▶️ чтобы услышать произношение"
     )
+
+
+async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Explain unsupported commands instead of leaving the user waiting."""
+    await update.message.reply_text("Не знаю такую команду. Напишите /help или отправьте фразу на русском.")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -149,9 +155,9 @@ async def speak_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         else:
             await query.edit_message_text("Не удалось сгенерировать аудио")
     except Exception as e:
-        logger.error(f"Speak error: {e}", exc_info=True)
+        logger.error("Speak error: errorClass=%s", type(e).__name__)
         try:
-            await query.edit_message_text(f"Ошибка озвучки: {e}")
+            await query.edit_message_text("Не удалось озвучить фразу. Попробуйте ещё раз позже.")
         except Exception:
             pass
     finally:
