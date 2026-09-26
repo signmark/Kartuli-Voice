@@ -100,6 +100,7 @@ class TranslationSafetyTest(unittest.IsolatedAsyncioTestCase):
         update.message.text = OWNER_PHRASE
         update.message.reply_text = AsyncMock()
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {}
 
         with patch("kartuli.bot.translate_to_georgian", AsyncMock(side_effect=TranslationUnavailableError())):
@@ -115,6 +116,7 @@ class TranslationSafetyTest(unittest.IsolatedAsyncioTestCase):
         update.message.text = OWNER_PHRASE
         update.message.reply_text = AsyncMock()
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {}
         client = self.provider("გამარჯობა друг! пойдем поужинаем?")
 
@@ -131,6 +133,7 @@ class TranslationSafetyTest(unittest.IsolatedAsyncioTestCase):
         update.message.text = OWNER_PHRASE
         update.message.reply_text = AsyncMock()
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {}
 
         with patch("kartuli.bot.translate_to_georgian", AsyncMock(side_effect=TranslationError())):

@@ -49,6 +49,7 @@ class FavoriteStoreTest(unittest.TestCase):
         self.db_path.unlink()
         restarted = FavoriteStore(self.db_path)
         self.assertEqual(restarted.counts(11), {})
+        self.assertEqual(list((self.db_path.parent / "audio").glob("*.mp3")), [])
         self.assertEqual(restarted.list_category(11, "greetings"), [])
         with self.assertRaises(ValueError):
             restarted.add(11, "Привет", "გამარჯობა", "custom", self.source_audio)
@@ -66,6 +67,7 @@ class FavoriteBotTest(unittest.IsolatedAsyncioTestCase):
         self.source_audio = Path(self.temporary.name) / "provider.mp3"
         self.source_audio.write_bytes(b"one-generated-audio")
         self.context = MagicMock()
+        self.context.bot.send_chat_action = AsyncMock()
         self.context.user_data = {}
         self.query = MagicMock()
         self.query.from_user.id = 11
@@ -156,6 +158,29 @@ class FavoriteBotTest(unittest.IsolatedAsyncioTestCase):
         command_update.message.reply_text = AsyncMock()
         await favorites_command(command_update, self.context)
         self.assertIn("Избранное пусто", command_update.message.reply_text.await_args.args[0])
+
+    async def test_empty_generated_audio_has_plain_error(self) -> None:
+        self.context.user_data = {
+            "audio_texts": {"saved": "მადლობა"},
+            "favorite_sources": {"saved": "Спасибо"},
+        }
+        self.source_audio.write_bytes(b"")
+        self.query.data = "fav:cat:saved:greetings"
+        with patch("kartuli.bot.generate_audio", AsyncMock(return_value=str(self.source_audio))):
+            await favorites_callback(self.update, self.context)
+        self.assertIn("Не удалось озвучить", self.query.edit_message_text.await_args.args[0])
+        self.assertEqual(FavoriteStore().counts(11), {})
+
+    async def test_audio_provider_error_has_plain_error(self) -> None:
+        self.context.user_data = {
+            "audio_texts": {"saved": "მადლობა"},
+            "favorite_sources": {"saved": "Спасибо"},
+        }
+        self.query.data = "fav:cat:saved:greetings"
+        with patch("kartuli.bot.generate_audio", AsyncMock(side_effect=ValueError("internal detail"))):
+            await favorites_callback(self.update, self.context)
+        self.assertIn("Не удалось озвучить", self.query.edit_message_text.await_args.args[0])
+        self.assertNotIn("internal detail", self.query.edit_message_text.await_args.args[0])
 
 
 if __name__ == "__main__":

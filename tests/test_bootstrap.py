@@ -78,6 +78,7 @@ class BotBootstrapTest(unittest.IsolatedAsyncioTestCase):
         update = MagicMock()
         update.callback_query = query
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {"audio_texts": {"stored": "მადლობა"}}
 
         with patch("kartuli.bot.generate_audio", AsyncMock(side_effect=RuntimeError("internal detail"))):

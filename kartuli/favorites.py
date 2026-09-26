@@ -41,6 +41,7 @@ class FavoriteStore:
 
     def _connect(self) -> sqlite3.Connection:
         self.db_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        recreated = not self.db_path.exists()
         connection = sqlite3.connect(self.db_path, timeout=5)
         connection.row_factory = sqlite3.Row
         connection.execute(
@@ -56,6 +57,9 @@ class FavoriteStore:
             )"""
         )
         self.db_path.chmod(0o600)
+        if recreated and self.audio_dir.exists():
+            for orphan in self.audio_dir.glob("*.mp3"):
+                orphan.unlink(missing_ok=True)
         return connection
 
     @staticmethod

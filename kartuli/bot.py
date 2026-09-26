@@ -1,9 +1,12 @@
 """Kartuli-Voice MVP — Telegram bot."""
+import asyncio
+from contextlib import asynccontextmanager, suppress
 import logging
 import os
 from pathlib import Path
 import secrets
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ChatAction
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
 from kartuli.config import TELEGRAM_BOT_TOKEN
@@ -16,6 +19,35 @@ from kartuli.tts import generate_audio
 THIRD_PARTY_LOGGERS = ("httpx", "httpcore", "telegram.request")
 MAX_AUDIO_TEXTS_PER_USER = 20
 FAVORITES_PAGE_SIZE = 10
+FAVORITES_BUTTON = InlineKeyboardMarkup([[InlineKeyboardButton("📂 Избранное", callback_data="fav:show")]])
+
+
+@asynccontextmanager
+async def _working(bot, chat_id: int, action: str):
+    """Refresh Telegram's short-lived activity indicator until the call ends."""
+    try:
+        await bot.send_chat_action(chat_id=chat_id, action=action)
+    except Exception as error:
+        logger.warning("Chat action failed: errorClass=%s", type(error).__name__)
+        yield
+        return
+
+    async def refresh():
+        while True:
+            await asyncio.sleep(4)
+            try:
+                await bot.send_chat_action(chat_id=chat_id, action=action)
+            except Exception as error:
+                logger.warning("Chat action failed: errorClass=%s", type(error).__name__)
+                return
+
+    task = asyncio.create_task(refresh())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
 
 def configure_logging() -> None:
@@ -84,7 +116,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "🇬🇪 გამარჯობა! Я помогу тебе с грузинским языком.\n\n"
         "Просто напиши фразу на русском — я переведу, дам транскрипцию и озвучу.\n\n"
-        "Примеры: Спасибо! Помогите! Где?"
+        "Примеры: Спасибо! Помогите! Где?",
+        reply_markup=FAVORITES_BUTTON,
     )
 
 
@@ -96,7 +129,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "2. Получи перевод на грузинский\n"
         "3. Получи транслитерацию (как произносить)\n"
         "4. Нажми ▶️ чтобы услышать произношение"
-        "\n5. Нажми ⭐ чтобы сохранить фразу, затем /favorites чтобы открыть избранное"
+        "\n5. Нажми ⭐ чтобы сохранить фразу, затем /favorites чтобы открыть избранное",
+        reply_markup=FAVORITES_BUTTON,
     )
 
 
@@ -112,7 +146,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     try:
         # Перевод на грузинский
-        georgian_text = await translate_to_georgian(text)
+        async with _working(context.bot, update.effective_chat.id, ChatAction.TYPING):
+            georgian_text = await translate_to_georgian(text)
         
         # Транслитерация
         translit_ru = transliterate_georgian(georgian_text)
@@ -146,7 +181,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             "Не удалось перевести фразу целиком. Попробуйте ещё раз позже."
         )
     except Exception as e:
-        logger.error(f"Message handler error: {e}", exc_info=True)
+        logger.error("Message handler error: errorClass=%s", type(e).__name__)
         await update.message.reply_text("Произошла ошибка. Попробуйте ещё раз.")
 
 
@@ -164,7 +199,8 @@ async def speak_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     audio_path = None
     try:
         # Генерация аудио
-        audio_path = await generate_audio(text)
+        async with _working(context.bot, query.message.chat.id, ChatAction.RECORD_VOICE):
+            audio_path = await generate_audio(text)
         
         if audio_path:
             with open(audio_path, "rb") as audio_file:
@@ -284,11 +320,23 @@ async def favorites_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await query.answer()
             audio_source = None
             try:
-                audio_source = await generate_audio(translation)
+                try:
+                    async with _working(context.bot, query.message.chat.id, ChatAction.RECORD_VOICE):
+                        audio_source = await generate_audio(translation)
+                except Exception as error:
+                    logger.error("Favorite audio failed: errorClass=%s", type(error).__name__)
+                    await query.edit_message_text("Не удалось озвучить фразу. Попробуйте добавить её позже.")
+                    return
                 if not audio_source:
                     await query.edit_message_text("Не удалось озвучить фразу. Попробуйте добавить её позже.")
                     return
-                card, created = store.add(user_id, source, translation, category, audio_source)
+                try:
+                    card, created = store.add(user_id, source, translation, category, audio_source)
+                except ValueError as error:
+                    if str(error) != "Empty favorite audio":
+                        raise
+                    await query.edit_message_text("Не удалось озвучить фразу. Попробуйте добавить её позже.")
+                    return
             finally:
                 if audio_source:
                     Path(audio_source).unlink(missing_ok=True)

@@ -32,6 +32,7 @@ class MessageBoundAudioTest(unittest.IsolatedAsyncioTestCase):
 
     def test_audio_text_storage_is_bounded(self) -> None:
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {}
 
         with patch("kartuli.bot.secrets.token_urlsafe", side_effect=[f"id-{i}" for i in range(21)]):
@@ -47,6 +48,7 @@ class MessageBoundAudioTest(unittest.IsolatedAsyncioTestCase):
         update = MagicMock()
         update.message.reply_text = AsyncMock()
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {}
 
         with patch(
@@ -95,6 +97,7 @@ class MessageBoundAudioTest(unittest.IsolatedAsyncioTestCase):
         update.message.text = "спасибо"
         update.message.reply_text = AsyncMock()
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {}
 
         with patch(
@@ -131,6 +134,7 @@ class MessageBoundAudioTest(unittest.IsolatedAsyncioTestCase):
         update = MagicMock()
         update.callback_query = query
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {"audio_texts": {}}
 
         with patch("kartuli.bot.generate_audio", AsyncMock()) as generate_audio:
@@ -148,6 +152,7 @@ class MessageBoundAudioTest(unittest.IsolatedAsyncioTestCase):
         update.message.text = "личная фраза"
         update.message.reply_text = AsyncMock()
         context = MagicMock()
+        context.bot.send_chat_action = AsyncMock()
         context.user_data = {}
 
         with (
