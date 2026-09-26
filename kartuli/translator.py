@@ -153,6 +153,11 @@ def _split_russian_hint_word(word: str) -> list[str]:
     return syllables
 
 
+def _bracket_russian_hint_word(word: str) -> str:
+    syllables = _split_russian_hint_word(word)
+    return "[" + "-".join(_transliterate(syllable, TRANSLIT_RU) for syllable in syllables) + "]"
+
+
 async def translate_to_georgian(text: str) -> str:
     """Перевод текста на грузинский."""
     text_stripped = text.strip()
@@ -217,9 +222,19 @@ def transliterate_syllables(text: str) -> str:
     """Russian syllable hint with independent bracketed words."""
     words = []
     for word in text.split():
-        syllables = _split_russian_hint_word(word)
-        transliterated = [_transliterate(syllable, TRANSLIT_RU) for syllable in syllables]
-        words.append("[" + "-".join(transliterated) + "]")
+        parts = []
+        current = []
+        for char in word:
+            if char in TRANSLIT_RU:
+                current.append(char)
+            else:
+                if current:
+                    parts.append(_bracket_russian_hint_word("".join(current)))
+                    current = []
+                parts.append(char)
+        if current:
+            parts.append(_bracket_russian_hint_word("".join(current)))
+        words.append("".join(parts))
     return " ".join(words)
 
 

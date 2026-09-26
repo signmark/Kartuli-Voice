@@ -34,6 +34,17 @@ class RussianTransliterationTest(unittest.TestCase):
         self.assertEqual(transliterate_syllables("დამეხმარეთ"), "[да-ме-хма-рет]")
         self.assertEqual(transliterate_syllables("გთხოვთ"), "[гтховт]")
 
+    def test_russian_syllables_keep_punctuation_outside_brackets(self) -> None:
+        self.assertEqual(
+            transliterate_syllables("გამარჯობა, როგორ ხარ?"),
+            "[га-ма-рджо-ба], [ро-гор] [хар]?",
+        )
+        self.assertEqual(transliterate_syllables("— კარგი"), "— [ка-рги]")
+        self.assertEqual(
+            transliterate_syllables("«გამარჯობა!» — კარგი"),
+            "«[га-ма-рджо-ба]!» — [ка-рги]",
+        )
+
     def test_english_syllable_hint_is_unchanged(self) -> None:
         self.assertEqual(
             transliterate_english_syllables("გამარჯობა როგორ"),
