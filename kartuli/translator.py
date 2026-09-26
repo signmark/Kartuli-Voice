@@ -115,24 +115,7 @@ def _transliterate(text: str, table: dict) -> str:
     return "".join(result)
 
 
-def _split_syllables(text: str) -> list[str]:
-    """Разбивка грузинского текста на слоги."""
-    syllables = []
-    current = []
-    
-    for char in text:
-        current.append(char)
-        if char in VOWELS_GE:
-            syllables.append("".join(current))
-            current = []
-    
-    if current:
-        syllables.append("".join(current))
-    
-    return syllables
-
-
-def _split_russian_hint_word(word: str) -> list[str]:
+def _split_hint_word(word: str) -> list[str]:
     """Split one Georgian word and keep its final consonants in the last syllable."""
     syllables = []
     current = []
@@ -153,9 +136,9 @@ def _split_russian_hint_word(word: str) -> list[str]:
     return syllables
 
 
-def _bracket_russian_hint_word(word: str) -> str:
-    syllables = _split_russian_hint_word(word)
-    return "[" + "-".join(_transliterate(syllable, TRANSLIT_RU) for syllable in syllables) + "]"
+def _bracket_hint_word(word: str, table: dict) -> str:
+    syllables = _split_hint_word(word)
+    return "[" + "-".join(_transliterate(syllable, table) for syllable in syllables) + "]"
 
 
 async def translate_to_georgian(text: str) -> str:
@@ -218,8 +201,8 @@ def transliterate_georgian(text: str) -> str:
     return _transliterate(text, TRANSLIT_RU)
 
 
-def transliterate_syllables(text: str) -> str:
-    """Russian syllable hint with independent bracketed words."""
+def _transliterate_hint(text: str, table: dict) -> str:
+    """Bracket Georgian runs word by word, leaving punctuation in place."""
     words = []
     for word in text.split():
         parts = []
@@ -229,13 +212,18 @@ def transliterate_syllables(text: str) -> str:
                 current.append(char)
             else:
                 if current:
-                    parts.append(_bracket_russian_hint_word("".join(current)))
+                    parts.append(_bracket_hint_word("".join(current), table))
                     current = []
                 parts.append(char)
         if current:
-            parts.append(_bracket_russian_hint_word("".join(current)))
+            parts.append(_bracket_hint_word("".join(current), table))
         words.append("".join(parts))
     return " ".join(words)
+
+
+def transliterate_syllables(text: str) -> str:
+    """Russian syllable hint with independent bracketed words."""
+    return _transliterate_hint(text, TRANSLIT_RU)
 
 
 def transliterate_english(text: str) -> str:
@@ -244,9 +232,5 @@ def transliterate_english(text: str) -> str:
 
 
 def transliterate_english_syllables(text: str) -> str:
-    """Английская транслитерация по слогам: [da-me-khma-ret]."""
-    syllables = _split_syllables(text)
-    result = []
-    for s in syllables:
-        result.append(_transliterate(s, TRANSLIT_EN))
-    return "[" + "-".join(result) + "]"
+    """English syllable hint with independent bracketed words."""
+    return _transliterate_hint(text, TRANSLIT_EN)

@@ -45,11 +45,15 @@ class RussianTransliterationTest(unittest.TestCase):
             "«[га-ма-рджо-ба]!» — [ка-рги]",
         )
 
-    def test_english_syllable_hint_is_unchanged(self) -> None:
+    def test_english_syllables_keep_word_boundaries_and_final_consonants(self) -> None:
         self.assertEqual(
             transliterate_english_syllables("გამარჯობა როგორ"),
-            "[ga-ma-rjo-ba- ro-go-r]",
+            "[ga-ma-rjo-ba] [ro-gor]",
         )
+        self.assertEqual(transliterate_english_syllables("დამეხმარეთ"), "[da-me-khma-ret]")
+        self.assertEqual(transliterate_english_syllables("გთხოვთ"), "[gtkhovt]")
+        self.assertEqual(transliterate_english_syllables("გამარჯობა, როგორ?"), "[ga-ma-rjo-ba], [ro-gor]?")
+        self.assertEqual(transliterate_english_syllables("— კარგი"), "— [k'a-rgi]")
 
     def test_dictionary_outputs_never_leave_georgian_in_russian_transcription(self) -> None:
         for source, translated in DICTIONARY.items():
